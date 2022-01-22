@@ -1,16 +1,34 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SportsStore.DbContexts;
+using SportsStore.DbContexts.SeedData;
+using SportsStore.Repositories.Abstractions;
+using SportsStore.Repositories.Implementations.EntityFramework;
 
 namespace SportsStore
 {
     public class Startup
     {
+        public Startup(IConfiguration config)
+        {
+            Configuration = config;
+        }
+        private IConfiguration Configuration { get; set; }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+
+            services.AddDbContext<StoreDbContext>(opts => {
+                opts.UseSqlServer(Configuration["ConnectionStrings:SportsStoreConnection"]);
+            });
+
+            services.AddScoped<IStoreRepository, EFStoreRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -27,6 +45,8 @@ namespace SportsStore
             app.UseEndpoints(endpoints => {
                 endpoints.MapDefaultControllerRoute();
             });
+
+            SeedData.EnsurePopulated(app);
         }
     }
 }
